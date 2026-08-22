@@ -62,13 +62,23 @@ wss.on("connection", (socket) => {
     console.log("En spelare anslöt.");
 
     let player = {
-        socket: socket,
-        room: null,
-        id:
-            Math.random()
-                .toString(36)
-                .substring(2, 10)
-    };
+    socket: socket,
+
+    room: null,
+
+    id:
+        Math.random()
+            .toString(36)
+            .substring(2, 10),
+
+    // Spelarens position
+    x: 0,
+    y: 1,
+    z: 0,
+
+    // Spelarens riktning
+    rotation: 0
+};
 
     socket.on("message", (message) => {
 
@@ -185,6 +195,33 @@ wss.on("connection", (socket) => {
                     room.players.length
             });
 
+// Skicka alla befintliga spelare
+// till den nya spelaren
+
+for (
+    const otherPlayer of room.players
+) {
+
+    send(player.socket, {
+        type: "playerJoined",
+        playerId:
+            otherPlayer.id,
+
+        x:
+            otherPlayer.x,
+
+        y:
+            otherPlayer.y,
+
+        z:
+            otherPlayer.z,
+
+        rotation:
+            otherPlayer.rotation
+    });
+
+}
+
             console.log(
                 `Spelare gick med i ${code}`
             );
@@ -194,6 +231,99 @@ wss.on("connection", (socket) => {
 
     });
 
+// =========================
+// SPELARE RÖR SIG
+// =========================
+
+if (data.type === "playerMove") {
+
+    if (!player.room) {
+        return;
+    }
+
+
+    // Spara positionen
+
+    if (
+        typeof data.x === "number"
+    ) {
+
+        player.x =
+            data.x;
+
+    }
+
+    if (
+        typeof data.y === "number"
+    ) {
+
+        player.y =
+            data.y;
+
+    }
+
+    if (
+        typeof data.z === "number"
+    ) {
+
+        player.z =
+            data.z;
+
+    }
+
+    if (
+        typeof data.rotation ===
+        "number"
+    ) {
+
+        player.rotation =
+            data.rotation;
+
+    }
+
+
+    // Skicka positionen
+    // till de andra spelarna
+
+    for (
+        const otherPlayer of
+        player.room.players
+    ) {
+
+        if (
+            otherPlayer ===
+            player
+        ) {
+            continue;
+        }
+
+        send(
+            otherPlayer.socket,
+            {
+                type:
+                    "playerMove",
+
+                playerId:
+                    player.id,
+
+                x:
+                    player.x,
+
+                y:
+                    player.y,
+
+                z:
+                    player.z,
+
+                rotation:
+                    player.rotation
+            }
+        );
+
+    }
+
+    return;
+}
 
     // =========================
     // SPELARE LÄMNAR
